@@ -4,9 +4,10 @@ package com.opentokreactnative;
  * Created by manik on 1/29/18.
  */
 
+import android.hardware.Camera;
 import android.util.Log;
 import android.widget.FrameLayout;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.view.View;
 
 import com.facebook.react.bridge.Arguments;
@@ -34,7 +35,6 @@ import com.opentokreactnative.utils.Utils;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
-import java.util.List;
 
 public class OTSessionManager extends ReactContextBaseJavaModule
         implements Session.SessionListener,
@@ -52,6 +52,7 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         SubscriberKit.VideoListener,
         SubscriberKit.StreamListener{
 
+    private Camera mCamera;
     private ConcurrentHashMap<String, Integer> connectionStatusMap = new ConcurrentHashMap<>();
     private ArrayList<String> jsEvents = new ArrayList<String>();
     private ArrayList<String> componentEvents = new ArrayList<String>();
@@ -75,7 +76,7 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         final boolean isCamera2Capable = sessionOptions.getBoolean("isCamera2Capable");
         final boolean connectionEventsSuppressed = sessionOptions.getBoolean("connectionEventsSuppressed");
         final boolean ipWhitelist = sessionOptions.getBoolean("ipWhitelist");
-        // Note: IceConfig is an additional property not supported at the moment. 
+        // Note: IceConfig is an additional property not supported at the moment.
         // final ReadableMap iceConfig = sessionOptions.getMap("iceConfig");
         // final List<Session.Builder.IceServer> iceConfigServerList = (List<Session.Builder.IceServer>) iceConfig.getArray("customServers");
         // final Session.Builder.IncludeServers iceConfigServerConfig; // = iceConfig.getString("includeServers");
@@ -100,7 +101,7 @@ public class OTSessionManager extends ReactContextBaseJavaModule
                     }
                 })
                 .connectionEventsSuppressed(connectionEventsSuppressed)
-                // Note: setCustomIceServers is an additional property not supported at the moment. 
+                // Note: setCustomIceServers is an additional property not supported at the moment.
                 // .setCustomIceServers(serverList, config)
                 .setIpWhitelist(ipWhitelist)
                 .setProxyUrl(proxyUrl)
@@ -166,10 +167,10 @@ public class OTSessionManager extends ReactContextBaseJavaModule
                     .audioBitrate(audioBitrate)
                     .resolution(Publisher.CameraCaptureResolution.valueOf(resolution))
                     .frameRate(Publisher.CameraCaptureFrameRate.valueOf(frameRate))
+                    .capturer(new TokboxVideoCapturer(this.getReactApplicationContext()))
                     .build();
-            if (cameraPosition.equals("back")) {
-                mPublisher.cycleCamera();
-            }
+            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
+            capturer.swapCamera(cameraPosition);
         }
         mPublisher.setPublisherListener(this);
         mPublisher.setAudioLevelListener(this);
@@ -266,6 +267,20 @@ public class OTSessionManager extends ReactContextBaseJavaModule
     }
 
     @ReactMethod
+    public void flash(String publisherId, Boolean isFlashOn) {
+
+        System.out.println("flash");
+        ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
+        Publisher mPublisher = mPublishers.get(publisherId);
+        if (mPublisher != null) {
+
+            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
+            System.out.println("mPublisher");
+            capturer.setFlashEnabled(isFlashOn);
+        }
+    }
+
+    @ReactMethod
     public void publishAudio(String publisherId, Boolean publishAudio) {
 
         ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
@@ -311,7 +326,8 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
         Publisher mPublisher = mPublishers.get(publisherId);
         if (mPublisher != null) {
-            mPublisher.cycleCamera();
+            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
+            capturer.swapCamera(cameraPosition);
         }
     }
 

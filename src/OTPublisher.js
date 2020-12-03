@@ -56,6 +56,7 @@ class OTPublisher extends Component {
       }
     };
 
+    updatePublisherProperty('flash', false);
     updatePublisherProperty('publishAudio', true);
     updatePublisherProperty('publishVideo', true);
     updatePublisherProperty('cameraPosition', 'front');
