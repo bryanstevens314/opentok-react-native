@@ -1,4 +1,4 @@
-import React, { Component, Children, cloneElement } from 'react';
+import React, { Component, Children, cloneElement, useEffect, useCallback, useState, useRef } from 'react';
 import { View, ViewPropTypes } from 'react-native';
 import PropTypes from 'prop-types';
 import { pick, isNull } from 'underscore';
@@ -9,108 +9,86 @@ import { handleError } from './OTError';
 import { logOT, getOtrnErrorEventHandler } from './helpers/OTHelper';
 import OTContext from './contexts/OTContext';
 
-export default class OTSession extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      sessionInfo: null,
-    };
-    this.otrnEventHandler = getOtrnErrorEventHandler(this.props.eventHandlers);
-    this.initComponent();
-  }
-  initComponent = () => {
-    const credentials = pick(this.props, ['apiKey', 'sessionId', 'token']);
-    this.sanitizedCredentials = sanitizeCredentials(credentials);
-    if (Object.keys(this.sanitizedCredentials).length === 3) {
-      const sessionEvents = sanitizeSessionEvents(this.sanitizedCredentials.sessionId, this.props.eventHandlers);
-      setNativeEvents(sessionEvents);
-    }
-  }
-  componentDidMount() {
-    const sessionOptions = sanitizeSessionOptions(this.props.options);
-    const { apiKey, sessionId, token } = this.sanitizedCredentials;
-    if (apiKey && sessionId && token) {
-      this.createSession(this.sanitizedCredentials, sessionOptions);
-      logOT({ apiKey, sessionId, action: 'rn_initialize', proxyUrl: sessionOptions.proxyUrl });
-    } else {
-      handleError('Please check your OpenTok credentials.');
-    }
-  }
-  componentDidUpdate(previousProps) {
-    const useDefault = (value, defaultValue) => (value === undefined ? defaultValue : value);
-    const shouldUpdate = (key, defaultValue) => {
-      const previous = useDefault(previousProps[key], defaultValue);
-      const current = useDefault(this.props[key], defaultValue);
-      return previous !== current;
-    };
+const OTSession: () => React$Node = (props) => {
+  let [sessionInfo, setSessionInfo] = useState(null);
+  let otrnEventHandler = useRef(null);
 
-    const updateSessionProperty = (key, defaultValue) => {
-      if (shouldUpdate(key, defaultValue)) {
-        const value = useDefault(this.props[key], defaultValue);
-        this.signal(value);
-      }
-    };
+  let createSession = useCallback((credentials, sessionOptions) => {
 
-    updateSessionProperty('signal', {});
-  }
-  componentWillUnmount() {
-    this.disconnectSession();
-  }
-  createSession(credentials, sessionOptions) {
-    const { signal } = this.props;
     const { apiKey, sessionId, token } = credentials;
     OT.initSession(apiKey, sessionId, sessionOptions);
     OT.connect(sessionId, token, (error) => {
       if (error) {
-        this.otrnEventHandler(error);
+        otrnEventHandler.current(error);
       } else {
         OT.getSessionInfo(sessionId, (session) => {
           if (!isNull(session)) {
             const sessionInfo = { ...session, connectionStatus: getConnectionStatus(session.connectionStatus)};
-            this.setState({
-              sessionInfo,
-            });
+            setSessionInfo(sessionInfo);
             logOT({ apiKey, sessionId, action: 'rn_on_connect', proxyUrl: sessionOptions.proxyUrl, connectionId: session.connection.connectionId });
-            if (Object.keys(signal).length > 0) {
-              this.signal(signal);
+            if (Object.keys(props.signal).length > 0) {
+              signal(props.signal);
             }
           }
         });
       }
     });
-  }
-  disconnectSession() {
-    OT.disconnectSession(this.props.sessionId, (disconnectError) => {
+  })
+
+  let disconnectSession = useCallback(() => {
+    OT.disconnectSession(props.sessionId, (disconnectError) => {
       if (disconnectError) {
-        this.otrnEventHandler(disconnectError);
+        otrnEventHandler.current(disconnectError);
       } else {
-        const events = sanitizeSessionEvents(this.props.sessionId, this.props.eventHandlers);
+        const events = sanitizeSessionEvents(props.sessionId, props.eventHandlers);
         removeNativeEvents(events);
       }
     });
-  }
-  getSessionInfo() {
-    return this.state.sessionInfo;
-  }
-  signal(signal) {
+  })
+
+  let signal = useCallback((signal) => {
     const signalData = sanitizeSignalData(signal);
-    OT.sendSignal(this.props.sessionId, signalData.signal, signalData.errorHandler);
-  }
-  render() {
-    const { style, children, sessionId, apiKey, token } = this.props;
-    const { sessionInfo } = this.state;
-    if (children && sessionId && apiKey && token) {
-      return (
-        <OTContext.Provider value={{ sessionId, sessionInfo }}>
-          <View style={style}>
-            { children }
-          </View>
-        </OTContext.Provider>
-      );
+    OT.sendSignal(props.sessionId, signalData.signal, signalData.errorHandler);
+  })
+
+  useEffect(() => {
+
+    otrnEventHandler.current = getOtrnErrorEventHandler(props.eventHandlers);
+
+    const credentials = pick(props, ['apiKey', 'sessionId', 'token']);
+
+    if (Object.keys(credentials).length === 3) {
+      const sessionEvents = sanitizeSessionEvents(credentials.sessionId, props.eventHandlers);
+      setNativeEvents(sessionEvents);
     }
-    return <View />;
-  }
+    const sessionOptions = sanitizeSessionOptions(props.options);
+    createSession(credentials, sessionOptions);
+
+    return disconnectSession;
+  }, [])
+
+  useEffect(() => {
+    // componentDidUpdate
+    const useDefault = (value, defaultValue) => (value === undefined ? defaultValue : value);
+
+    const updateSessionProperty = (key, defaultValue) => {
+      const value = useDefault(props[key], defaultValue);
+      signal(value);
+    };
+
+    updateSessionProperty('signal', {});
+  }, [sessionInfo])
+
+
+  return (
+    <OTContext.Provider value={{ sessionId: props.sessionId, sessionInfo: sessionInfo }}>
+      <View style={props.style}>
+        { props.children }
+      </View>
+    </OTContext.Provider>
+  );
 }
+
 
 OTSession.propTypes = {
   apiKey: PropTypes.string.isRequired,
@@ -134,3 +112,5 @@ OTSession.defaultProps = {
     flex: 1
   },
 };
+
+export default OTSession;
