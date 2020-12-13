@@ -4,7 +4,6 @@ package com.opentokreactnative;
  * Created by manik on 1/29/18.
  */
 
-import android.hardware.Camera;
 import android.util.Log;
 import android.widget.FrameLayout;
 import androidx.annotation.Nullable;
@@ -52,7 +51,6 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         SubscriberKit.VideoListener,
         SubscriberKit.StreamListener{
 
-    private Camera mCamera;
     private ConcurrentHashMap<String, Integer> connectionStatusMap = new ConcurrentHashMap<>();
     private ArrayList<String> jsEvents = new ArrayList<String>();
     private ArrayList<String> componentEvents = new ArrayList<String>();
@@ -137,7 +135,6 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         String name = properties.getString("name");
         Boolean videoTrack = properties.getBoolean("videoTrack");
         Boolean audioTrack = properties.getBoolean("audioTrack");
-        String cameraPosition = properties.getString("cameraPosition");
         Boolean audioFallbackEnabled = properties.getBoolean("audioFallbackEnabled");
         int audioBitrate = properties.getInt("audioBitrate");
         String frameRate = "FPS_" + properties.getInt("frameRate");
@@ -160,17 +157,9 @@ public class OTSessionManager extends ReactContextBaseJavaModule
                     .build();
             mPublisher.setPublisherVideoType(PublisherKit.PublisherKitVideoType.PublisherKitVideoTypeScreen);
         } else {
-            mPublisher = new Publisher.Builder(this.getReactApplicationContext())
-                    .audioTrack(audioTrack)
-                    .videoTrack(videoTrack)
-                    .name(name)
-                    .audioBitrate(audioBitrate)
-                    .resolution(Publisher.CameraCaptureResolution.valueOf(resolution))
-                    .frameRate(Publisher.CameraCaptureFrameRate.valueOf(frameRate))
-                    .capturer(new TokboxVideoCapturer(this.getReactApplicationContext()))
-                    .build();
-            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
-            capturer.swapCamera(cameraPosition);
+            mPublisher = new OTPublisherManager(this.getReactApplicationContext()).initialize(audioTrack, videoTrack, name, audioBitrate, resolution, frameRate);
+            final OTCameraCapture capturer = (OTCameraCapture) mPublisher.getCapturer();
+            capturer.swapCamera(false);
         }
         mPublisher.setPublisherListener(this);
         mPublisher.setAudioLevelListener(this);
@@ -267,22 +256,7 @@ public class OTSessionManager extends ReactContextBaseJavaModule
     }
 
     @ReactMethod
-    public void flash(String publisherId, Boolean isFlashOn) {
-
-        System.out.println("flash");
-        ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
-        Publisher mPublisher = mPublishers.get(publisherId);
-        if (mPublisher != null) {
-
-            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
-            System.out.println("mPublisher");
-            capturer.setFlashEnabled(isFlashOn);
-        }
-    }
-
-    @ReactMethod
     public void publishAudio(String publisherId, Boolean publishAudio) {
-
         ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
         Publisher mPublisher = mPublishers.get(publisherId);
         if (mPublisher != null) {
@@ -292,7 +266,6 @@ public class OTSessionManager extends ReactContextBaseJavaModule
 
     @ReactMethod
     public void publishVideo(String publisherId, Boolean publishVideo) {
-
         ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
         Publisher mPublisher = mPublishers.get(publisherId);
         if (mPublisher != null) {
@@ -320,16 +293,6 @@ public class OTSessionManager extends ReactContextBaseJavaModule
         }
     }
 
-    @ReactMethod
-    public void changeCameraPosition(String publisherId, String cameraPosition) {
-
-        ConcurrentHashMap<String, Publisher> mPublishers = sharedState.getPublishers();
-        Publisher mPublisher = mPublishers.get(publisherId);
-        if (mPublisher != null) {
-            final TokboxVideoCapturer capturer = (TokboxVideoCapturer) mPublisher.getCapturer();
-            capturer.swapCamera(cameraPosition);
-        }
-    }
 
     @ReactMethod
     public void setNativeEvents(ReadableArray events) {

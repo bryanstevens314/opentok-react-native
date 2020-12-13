@@ -1,7 +1,5 @@
 package com.opentokreactnative;
 
-import android.os.AsyncTask;
-
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -13,15 +11,16 @@ public class OTPublisherManager extends ReactContextBaseJavaModule {
     private static OTCameraCapture capturer;
     private static Publisher mPublisher;
     public OTRN sharedState;
+    public ReactApplicationContext context;
 
     public OTPublisherManager(ReactApplicationContext reactContext) {
 
         super(reactContext);
         sharedState = OTRN.getSharedState();
-
+        context = reactContext;
     }
 
-    public static Publisher initialize(ReactApplicationContext context, boolean audioTrack, boolean videoTrack, String name, int audioBitrate, String resolution, String frameRate) {
+    public Publisher initialize(boolean audioTrack, boolean videoTrack, String name, int audioBitrate, String resolution, String frameRate) {
         capturer = new OTCameraCapture(context);
 
         mPublisher = new Publisher.Builder(context)
@@ -40,23 +39,11 @@ public class OTPublisherManager extends ReactContextBaseJavaModule {
         return this.getClass().getSimpleName();
     }
 
-    private class AsyncSwapCamera extends AsyncTask<Void, Void, Void> {
-
-        public AsyncSwapCamera(boolean cameraPosition) {
-            super();
-            capturer.swapCamera(cameraPosition);
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            return null;
-        }
-    }
 
     @ReactMethod
     public void swapCamera(boolean cameraPosition) {
-        AsyncSwapCamera task = new AsyncSwapCamera(cameraPosition);
-        task.execute();
+
+        capturer.swapCamera(cameraPosition);
     }
 
     @ReactMethod

@@ -48,18 +48,13 @@ class OTPublisher extends Component {
     const updatePublisherProperty = (key, defaultValue) => {
       if (shouldUpdate(key, defaultValue)) {
         const value = useDefault(this.props.properties[key], defaultValue);
-        if (key === 'cameraPosition') {
-          OT.changeCameraPosition(this.state.publisherId, value);
-        } else {
-          OT[key](this.state.publisherId, value);          
-        }
+        OT[key](this.state.publisherId, value); 
       }
     };
 
     updatePublisherProperty('flash', false);
     updatePublisherProperty('publishAudio', true);
     updatePublisherProperty('publishVideo', true);
-    updatePublisherProperty('cameraPosition', 'front');
   }
   componentWillUnmount() {
     OT.destroyPublisher(this.state.publisherId, (error) => {
