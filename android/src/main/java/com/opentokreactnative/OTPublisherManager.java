@@ -42,25 +42,36 @@ public class OTPublisherManager extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void swapCamera(boolean cameraPosition) {
-
         capturer.swapCamera(cameraPosition);
     }
 
     @ReactMethod
     public void setFlash(String isFlashOn) {
-
         capturer.setFlashEnabled(isFlashOn);
     }
 
     @ReactMethod
     public void getImgData(Callback callback) {
-
         capturer.getImgData(callback);
     }
 
     @ReactMethod
     public void clearPreview(Callback callback) {
-
         capturer.clearPreview(callback);
+    }
+
+    @ReactMethod
+    public void zoomIn() {
+        capturer.zoomIn();
+    }
+
+    @ReactMethod
+    public void zoomOut() {
+        capturer.zoomOut();
+    }
+
+    @ReactMethod
+    public void resetZoom() {
+        capturer.resetZoom();
     }
 }

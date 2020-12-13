@@ -68,6 +68,8 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
     int width = 0;
     int height = 0;
     int[] frame;
+    int zoomIndex = 0;
+    int maxZoom;
 
 
     Handler mHandler = new Handler();
@@ -109,9 +111,19 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
     private void initCamera() {
 
         this.mCamera = Camera.open(this.mCameraIndex);
+        Parameters parameters = this.mCamera.getParameters();
+        this.maxZoom = parameters.getMaxZoom();
+
+        this.mCamera.setZoomChangeListener(new Camera.OnZoomChangeListener() {
+            @Override
+            public void onZoomChange(int zoomValue, boolean stopped, Camera camera) {
+
+            }
+        });
         if(this.mCurrentDeviceInfo == null){
             this.mCurrentDeviceInfo = new CameraInfo();
         }
+
         Camera.getCameraInfo(this.mCameraIndex, this.mCurrentDeviceInfo);
     }
 
@@ -354,7 +366,14 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
         params.setJpegQuality(100);
 
         mCamera.setParameters(params);
-        mCamera.takePicture(null, null, pictureCallback);
+        mCamera.takePicture(null, null, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+                String encoded = Base64.encodeToString(data, Base64.DEFAULT);
+                response.putString("base64", encoded);
+                getImgDataCallback.invoke(null, response);
+            }
+        });
     }
 
     public void clearPreview(Callback callback){
@@ -362,12 +381,27 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
         callback.invoke();
     }
 
-    private final Camera.PictureCallback pictureCallback = new Camera.PictureCallback() {
-        @Override
-        public void onPictureTaken(byte[] data, Camera camera) {
-            String encoded = Base64.encodeToString(data, Base64.DEFAULT);
-            response.putString("base64", encoded);
-            getImgDataCallback.invoke(null, response);
+    public void zoomIn(){
+        if(((maxZoom / 10) * zoomIndex) < maxZoom){
+            zoomIndex++;
+            setZoom((maxZoom / 10) * zoomIndex);
         }
-    };
+    }
+
+    public void zoomOut(){
+        if(((maxZoom / 10) * zoomIndex) > 0){
+            zoomIndex--;
+            setZoom((maxZoom / 10) * zoomIndex);
+        }
+    }
+
+    private void setZoom(int zoom){
+        Camera.Parameters params = mCamera.getParameters();
+        params.setZoom(zoom);
+        mCamera.setParameters(params);
+    }
+    public void resetZoom(){
+        zoomIndex = 0;
+        setZoom(0);
+    }
 }
