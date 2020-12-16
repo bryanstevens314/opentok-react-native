@@ -75,22 +75,23 @@ class OTSessionManager: RCTEventEmitter {
             publisherProperties.cameraFrameRate = Utils.sanitizeFrameRate(properties["frameRate"] as Any);
             publisherProperties.cameraResolution = Utils.sanitizeCameraResolution(properties["resolution"] as Any);
             publisherProperties.name = properties["name"] as? String;
-            OTRN.sharedState.publishers.updateValue(OTPublisher(delegate: self, settings: publisherProperties)!, forKey: publisherId);
-            guard let publisher = OTRN.sharedState.publishers[publisherId] else {
-                let errorInfo = EventUtils.createErrorMessage("There was an error creating the native publisher instance")
-                callback([errorInfo]);
-                return
-            }
+            let publisher = OTPublisher(delegate: self, settings: publisherProperties)!
+
+            publisher.videoType = .screen;
+
+            OTRN.sharedState.publishers.updateValue(publisher, forKey: publisherId);
             if let videoSource = properties["videoSource"] as? String, videoSource == "screen" {
                 guard let screenView = RCTPresentedViewController()?.view else {
                     let errorInfo = EventUtils.createErrorMessage("There was an error setting the videoSource as screen")
                     callback([errorInfo]);
                     return
                 }
-                publisher.videoType = .screen;
+
                 publisher.videoCapture = OTScreenCapture(view: (screenView))
-            } else if let cameraPosition = properties["cameraPosition"] as? String {
-                publisher.cameraPosition = cameraPosition == "front" ? .front : .back;
+            } else if ((properties["cameraPosition"] as? String) != nil) {
+                
+                publisher.videoCapture = OTCameraCapture()
+                OTPublisherManager.publisherId = publisherId;
             }
             publisher.audioFallbackEnabled = Utils.sanitizeBooleanProperty(properties["audioFallbackEnabled"] as Any);
             publisher.publishAudio = Utils.sanitizeBooleanProperty(properties["publishAudio"] as Any);

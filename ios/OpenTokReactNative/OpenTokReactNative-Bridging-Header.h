@@ -7,3 +7,4 @@
 #import <React/RCTEventEmitter.h>
 #import <OpenTok/OpenTok.h>
 #import "OTScreenCapture.h"
+#import "OTCameraCapture.h"
