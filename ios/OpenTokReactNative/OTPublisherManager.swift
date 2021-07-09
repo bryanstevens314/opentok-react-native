@@ -21,6 +21,13 @@ class OTPublisherManager: RCTViewManager {
         return true;
     }
     
+    @objc func isFlashSupported(_ callback: @escaping RCTResponseSenderBlock) -> Void {
+        guard let publisher = OTRN.sharedState.publishers[OTPublisherManager.publisherId] else { return }
+        let capturer = publisher.videoCapture as! OTCameraCapture
+        let flashSupported = capturer.isFlashSupported()
+        callback([flashSupported])
+    }
+    
     @objc func setFlash(_ torchMode: String ) -> Void {
         guard let publisher = OTRN.sharedState.publishers[OTPublisherManager.publisherId] else { return }
         let capturer = publisher.videoCapture as! OTCameraCapture

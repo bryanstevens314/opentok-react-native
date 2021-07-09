@@ -13,6 +13,8 @@
 
 @interface RCT_EXTERN_MODULE(OTPublisherManager, RCTEventEmitter)
 
+RCT_EXTERN_METHOD(isFlashSupported: (RCTResponseSenderBlock*)callback)
+
 RCT_EXTERN_METHOD(setFlash: (NSString*)torchMode)
 
 RCT_EXTERN_METHOD(swapCamera: (BOOL)position)

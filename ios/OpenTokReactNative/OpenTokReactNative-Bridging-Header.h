@@ -8,3 +8,4 @@
 #import <OpenTok/OpenTok.h>
 #import "OTScreenCapture.h"
 #import "OTCameraCapture.h"
+#import "OTVideoRender.h"

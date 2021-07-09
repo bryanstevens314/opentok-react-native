@@ -21,7 +21,8 @@
 		9C86850F218E3433004679BA /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C86850E218E3433004679BA /* Utils.swift */; };
 		BA0CCEB72313FD6200F3C9ED /* OTSessionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C6F95C120ACE90D00FEAD68 /* OTSessionManager.m */; };
 		DED80B3822DFB02F0094CDC9 /* OTScreenCapture.m in Sources */ = {isa = PBXBuildFile; fileRef = DED80B3622DFB02E0094CDC9 /* OTScreenCapture.m */; };
-		FBFEBD022585E4BC0023C9D8 /* OTCameraCapture.m in Sources */ = {isa = PBXBuildFile; fileRef = FBFEBD012585E4BC0023C9D8 /* OTCameraCapture.m */; };
+		FBDBB9922698DF1B004376DE /* OTVideoRender.m in Sources */ = {isa = PBXBuildFile; fileRef = FBDBB9902698DF1B004376DE /* OTVideoRender.m */; };
+		FBDBB9982698DF66004376DE /* OTCameraCapture.m in Sources */ = {isa = PBXBuildFile; fileRef = FBDBB9962698DF66004376DE /* OTCameraCapture.m */; };
 		FBFEBD052585F0AC0023C9D8 /* OTPublisherManager.m in Sources */ = {isa = PBXBuildFile; fileRef = FBFEBD042585F0AC0023C9D8 /* OTPublisherManager.m */; };
 		FBFEBD9B2585FD090023C9D8 /* OTPublisherSwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBFEBD9A2585FD090023C9D8 /* OTPublisherSwift.swift */; };
 /* End PBXBuildFile section */
@@ -57,8 +58,10 @@
 		9C86850E218E3433004679BA /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		DED80B3622DFB02E0094CDC9 /* OTScreenCapture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTScreenCapture.m; sourceTree = "<group>"; };
 		DED80B3722DFB02F0094CDC9 /* OTScreenCapture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTScreenCapture.h; sourceTree = "<group>"; };
-		FBFEBD002585E4BC0023C9D8 /* OTCameraCapture.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OTCameraCapture.h; sourceTree = "<group>"; };
-		FBFEBD012585E4BC0023C9D8 /* OTCameraCapture.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OTCameraCapture.m; sourceTree = "<group>"; };
+		FBDBB9902698DF1B004376DE /* OTVideoRender.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTVideoRender.m; sourceTree = "<group>"; };
+		FBDBB9912698DF1B004376DE /* OTVideoRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTVideoRender.h; sourceTree = "<group>"; };
+		FBDBB9962698DF66004376DE /* OTCameraCapture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTCameraCapture.m; sourceTree = "<group>"; };
+		FBDBB9972698DF66004376DE /* OTCameraCapture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTCameraCapture.h; sourceTree = "<group>"; };
 		FBFEBD042585F0AC0023C9D8 /* OTPublisherManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OTPublisherManager.m; sourceTree = "<group>"; };
 		FBFEBD9A2585FD090023C9D8 /* OTPublisherSwift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPublisherSwift.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -95,9 +98,15 @@
 			children = (
 				9C86849B218E2B31004679BA /* Utils */,
 				9C6F95CC20ACE90E00FEAD68 /* OTPublisher.m */,
-				FBFEBD9A2585FD090023C9D8 /* OTPublisherSwift.swift */,
+				DED80B3722DFB02F0094CDC9 /* OTScreenCapture.h */,
+				DED80B3622DFB02E0094CDC9 /* OTScreenCapture.m */,
+				FBDBB9972698DF66004376DE /* OTCameraCapture.h */,
+				FBDBB9962698DF66004376DE /* OTCameraCapture.m */,
+				FBDBB9912698DF1B004376DE /* OTVideoRender.h */,
+				FBDBB9902698DF1B004376DE /* OTVideoRender.m */,
 				FBFEBD042585F0AC0023C9D8 /* OTPublisherManager.m */,
 				9C6F95C520ACE90E00FEAD68 /* OTPublisherManager.swift */,
+				FBFEBD9A2585FD090023C9D8 /* OTPublisherSwift.swift */,
 				9C6F95C320ACE90E00FEAD68 /* OTPublisherView.swift */,
 				9C6F95CB20ACE90E00FEAD68 /* OTRN.swift */,
 				9C6F95C120ACE90D00FEAD68 /* OTSessionManager.m */,
@@ -108,10 +117,6 @@
 				9C6F95B720ACE8BE00FEAD68 /* OpenTokReactNative.h */,
 				9C6F95B820ACE8BE00FEAD68 /* OpenTokReactNative.m */,
 				9C6F95C020ACE90D00FEAD68 /* OpenTokReactNative-Bridging-Header.h */,
-				DED80B3722DFB02F0094CDC9 /* OTScreenCapture.h */,
-				DED80B3622DFB02E0094CDC9 /* OTScreenCapture.m */,
-				FBFEBD002585E4BC0023C9D8 /* OTCameraCapture.h */,
-				FBFEBD012585E4BC0023C9D8 /* OTCameraCapture.m */,
 			);
 			path = OpenTokReactNative;
 			sourceTree = "<group>";
@@ -183,7 +188,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FBFEBD022585E4BC0023C9D8 /* OTCameraCapture.m in Sources */,
 				9C6F95D020ACE90E00FEAD68 /* OTSubscriber.m in Sources */,
 				9C6F95D120ACE90E00FEAD68 /* OTPublisherManager.swift in Sources */,
 				9C86849D218E2B5A004679BA /* EventUtils.swift in Sources */,
@@ -192,6 +196,7 @@
 				9C6F95D320ACE90E00FEAD68 /* OTSubscriberView.swift in Sources */,
 				9C86850F218E3433004679BA /* Utils.swift in Sources */,
 				9C6F95CF20ACE90E00FEAD68 /* OTPublisherView.swift in Sources */,
+				FBDBB9922698DF1B004376DE /* OTVideoRender.m in Sources */,
 				FBFEBD052585F0AC0023C9D8 /* OTPublisherManager.m in Sources */,
 				9C6F95CE20ACE90E00FEAD68 /* OTSubscriberManager.swift in Sources */,
 				9C6F95B920ACE8BE00FEAD68 /* OpenTokReactNative.m in Sources */,
@@ -199,6 +204,7 @@
 				9C6F95D520ACE90E00FEAD68 /* OTRN.swift in Sources */,
 				DED80B3822DFB02F0094CDC9 /* OTScreenCapture.m in Sources */,
 				FBFEBD9B2585FD090023C9D8 /* OTPublisherSwift.swift in Sources */,
+				FBDBB9982698DF66004376DE /* OTCameraCapture.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

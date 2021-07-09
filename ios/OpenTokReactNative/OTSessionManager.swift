@@ -75,24 +75,34 @@ class OTSessionManager: RCTEventEmitter {
             publisherProperties.cameraFrameRate = Utils.sanitizeFrameRate(properties["frameRate"] as Any);
             publisherProperties.cameraResolution = Utils.sanitizeCameraResolution(properties["resolution"] as Any);
             publisherProperties.name = properties["name"] as? String;
-            let publisher = OTPublisher(delegate: self, settings: publisherProperties)!
+            
 
-            publisher.videoType = .screen;
-
-            OTRN.sharedState.publishers.updateValue(publisher, forKey: publisherId);
-            if let videoSource = properties["videoSource"] as? String, videoSource == "screen" {
+            if properties["videoSource"] as! String == "screen" {
                 guard let screenView = RCTPresentedViewController()?.view else {
                     let errorInfo = EventUtils.createErrorMessage("There was an error setting the videoSource as screen")
                     callback([errorInfo]);
                     return
                 }
-
-                publisher.videoCapture = OTScreenCapture(view: (screenView))
-            } else if ((properties["cameraPosition"] as? String) != nil) {
                 
-                publisher.videoCapture = OTCameraCapture()
-                OTPublisherManager.publisherId = publisherId;
+                publisherProperties.videoCapture = OTScreenCapture(view: (screenView))
+            } else {
+                
+                publisherProperties.videoCapture = OTCameraCapture()
+                
+
             }
+            let publisher = OTPublisher(delegate: self, settings: publisherProperties)!
+            
+            if properties["videoSource"] as! String == "screen" {
+                publisher.videoType = .screen;
+            }
+            
+            OTRN.sharedState.publishers.updateValue(publisher, forKey: publisherId);
+            
+            OTPublisherManager.publisherId = publisherId
+            publisher.videoRender = OTVideoRender(frame: CGRect(x: 0,y: 0,width: 1,height: 1))
+            
+            
             publisher.audioFallbackEnabled = Utils.sanitizeBooleanProperty(properties["audioFallbackEnabled"] as Any);
             publisher.publishAudio = Utils.sanitizeBooleanProperty(properties["publishAudio"] as Any);
             publisher.publishVideo = Utils.sanitizeBooleanProperty(properties["publishVideo"] as Any);
