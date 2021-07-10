@@ -1,5 +1,5 @@
 {
-  "name": "@bryanstevens314/opentok-react-native",
+  "name": "opentok-react-native",
   "version": "0.14.0",
   "description": "React Native components for OpenTok iOS and Android SDKs",
   "main": "src/index.js",
