@@ -10,7 +10,6 @@
 #import <UIKit/UIKit.h>
 #import "OTCameraCapture.h"
 #import <CoreVideo/CoreVideo.h>
-#import "AppDelegate.h"
 
 #define SYSTEM_VERSION_EQUAL_TO(v) \
 ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] == NSOrderedSame)
@@ -67,7 +66,6 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     enum OTCapturerErrorCode _captureErrorCode;
     
     BOOL isFirstFrame;
-    BOOL _capturing;
     BOOL getBase64;
     RCTResponseSenderBlock base64Callback;
     AVCaptureDevicePosition _cameraPosition;
@@ -75,7 +73,6 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
 }
 
 @synthesize captureSession = _captureSession;
-@synthesize delegate = _delegate;
 @synthesize videoInput = _videoInput, videoOutput = _videoOutput;
 @synthesize videoCaptureConsumer = _videoCaptureConsumer;
 
@@ -444,7 +441,7 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     
     //-- Create a video device and input from that Device.
     // Add the input to the capture session.
-    AVCaptureDevice * videoDevice = [self frontFacingCamera];
+    AVCaptureDevice * videoDevice = [self backFacingCamera];
     if(videoDevice == nil) {
         NSLog(@"ERROR[OpenTok]: Failed to acquire camera device for video "
               "capture.");
@@ -524,9 +521,7 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
 }
 
 - (void)initCapture {
-    dispatch_async(_capture_queue, ^{
-        [self setupAudioVideoSession];
-    });
+    [self setupAudioVideoSession];
 }
 
 - (void)initBlackFrameSender {
@@ -620,10 +615,6 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
                                        userInfo:nil];
         [self showCapturerError:err];
     }
-}
-
-- (void)statusBarOrientationChange:(NSNotification *)notification {
-    self.currentStatusBarOrientation = [notification.userInfo[UIApplicationStatusBarOrientationUserInfoKey] integerValue];
 }
 
 - (OTVideoOrientation)currentDeviceOrientation {

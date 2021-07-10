@@ -4,10 +4,14 @@
 //
 //  Copyright (c) 2013 Tokbox, Inc. All rights reserved.
 //
+// gg
 
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 #import <OpenTok/OpenTok.h>
+#import <React/RCTBridgeModule.h>
+#import <React/RCTBridgeMethod.h>
+#import <React/RCTEventEmitter.h>
 
 @protocol OTVideoCapture;
 
@@ -33,6 +37,7 @@
 
 - (BOOL)toggleCameraPosition;
 - (void)setFlash:(NSString *) mode;
+- (BOOL)isFlashSupported;
 - (void)swapCamera:(BOOL) position;
 - (void)getImgData:(RCTResponseSenderBlock) callback;
 - (void)zoomIn;
