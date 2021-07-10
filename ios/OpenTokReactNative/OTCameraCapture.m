@@ -66,9 +66,9 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     enum OTCapturerErrorCode _captureErrorCode;
     
     BOOL isFirstFrame;
+    
     BOOL getBase64;
     RCTResponseSenderBlock base64Callback;
-    AVCaptureDevicePosition _cameraPosition;
     int zoomIndex;
 }
 
@@ -81,7 +81,6 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
 -(id)init {
     self = [super init];
     if (self) {
-        _cameraPosition = AVCaptureDevicePositionBack;
         _capturePreset = AVCaptureSessionPreset1280x720;
 
         [[self class] dimensionsForCapturePreset:_capturePreset
@@ -92,7 +91,12 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
         _videoFrame = [[OTVideoFrame alloc] initWithFormat:
                       [OTVideoFormat videoFormatNV12WithWidth:_captureWidth
                                                        height:_captureHeight]];
+        _currentStatusBarOrientation = UIInterfaceOrientationUnknown;
         isFirstFrame = false;
+        [[NSNotificationCenter defaultCenter]
+         addObserver:self
+         selector:@selector(statusBarOrientationChange:)
+         name:UIApplicationWillChangeStatusBarOrientationNotification object:nil];
     }
     return self;
 }
@@ -136,13 +140,6 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     return [self cameraWithPosition:AVCaptureDevicePositionBack];
 }
 
-- (BOOL) hasMultipleCameras {
-    return [[[AVCaptureDeviceDiscoverySession discoverySessionWithDeviceTypes:@[AVCaptureDeviceTypeBuiltInWideAngleCamera] mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionUnspecified] devices] count] > 1;
-}
-
-- (BOOL) hasTorch {
-    return [[[self videoInput] device] hasTorch];
-}
 
 - (AVCaptureTorchMode) torchMode {
     return [[[self videoInput] device] torchMode];
@@ -373,35 +370,10 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     return [result allObjects];
 }
 
-- (void)swapCamera:(BOOL) position {
-    return [self setCameraPosition:position ? AVCaptureDevicePositionFront : AVCaptureDevicePositionBack];
+- (AVCaptureDevicePosition)cameraPosition {
+    return _videoInput.device.position;
 }
 
-- (void)setCameraPosition:(AVCaptureDevicePosition) position {
-    _cameraPosition = position;
-    [self setTorchMode:AVCaptureTorchModeOff];
-    
-    NSError *error;
-    AVCaptureDeviceInput * newVideoInput = [AVCaptureDeviceInput deviceInputWithDevice:[self cameraWithPosition:position] error:&error];
-    
-    if (error){
-        NSLog(@"Error setting up Video Capture input: %@", error);
-        return;
-    }
-    
-    dispatch_sync(_capture_queue, ^() {
-        [_captureSession beginConfiguration];
-        [_captureSession removeInput:_videoInput];
-        if ([_captureSession canAddInput:newVideoInput]) {
-            [_captureSession addInput:newVideoInput];
-            _videoInput = newVideoInput;
-        } else {
-            [_captureSession addInput:_videoInput];
-        }
-        [_captureSession commitConfiguration];
-    });
-    return;
-}
 
 - (void)releaseCapture {
     [[NSNotificationCenter defaultCenter] removeObserver:self
@@ -617,23 +589,41 @@ typedef NS_ENUM(int32_t, OTCapturerErrorCode) {
     }
 }
 
+- (void)statusBarOrientationChange:(NSNotification *)notification {
+    self.currentStatusBarOrientation = [notification.userInfo[UIApplicationStatusBarOrientationUserInfoKey] integerValue];
+}
+
 - (OTVideoOrientation)currentDeviceOrientation {
-    
-    switch([[UIDevice currentDevice] orientation]){
-        case UIDeviceOrientationUnknown:
-            return OTVideoOrientationUp;
-        case UIDeviceOrientationPortrait:
-            return OTVideoOrientationUp;
-        case UIDeviceOrientationPortraitUpsideDown:
-            return OTVideoOrientationDown;
-        case UIDeviceOrientationLandscapeLeft:
-            return _cameraPosition == AVCaptureDevicePositionBack ? OTVideoOrientationRight : OTVideoOrientationLeft;
-        case UIDeviceOrientationLandscapeRight:
-            return _cameraPosition == AVCaptureDevicePositionBack ? OTVideoOrientationLeft : OTVideoOrientationRight;
-        case UIDeviceOrientationFaceUp:
-            return OTVideoOrientationUp;
-        case UIDeviceOrientationFaceDown:
-            return OTVideoOrientationUp;
+    // transforms are different for
+    if (AVCaptureDevicePositionFront == [self cameraPosition])
+    {
+        switch (self.currentStatusBarOrientation) {
+            case UIInterfaceOrientationLandscapeLeft:
+                return OTVideoOrientationUp;
+            case UIInterfaceOrientationLandscapeRight:
+                return OTVideoOrientationDown;
+            case UIInterfaceOrientationPortrait:
+                return OTVideoOrientationLeft;
+            case UIInterfaceOrientationPortraitUpsideDown:
+                return OTVideoOrientationRight;
+            case UIInterfaceOrientationUnknown:
+                return OTVideoOrientationUp;
+        }
+    }
+    else
+    {
+        switch (self.currentStatusBarOrientation) {
+            case UIInterfaceOrientationLandscapeLeft:
+                return OTVideoOrientationDown;
+            case UIInterfaceOrientationLandscapeRight:
+                return OTVideoOrientationUp;
+            case UIInterfaceOrientationPortrait:
+                return OTVideoOrientationLeft;
+            case UIInterfaceOrientationPortraitUpsideDown:
+                return OTVideoOrientationRight;
+            case UIInterfaceOrientationUnknown:
+                return OTVideoOrientationUp;
+        }
     }
     
     return OTVideoOrientationUp;
@@ -657,21 +647,19 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     if (isFirstFrame == false)
     {
         isFirstFrame = true;
+        _currentStatusBarOrientation = [[UIApplication sharedApplication] statusBarOrientation];;
         [_videoOutput setSampleBufferDelegate:self queue:_capture_queue];
     }
 
-    if (self.noFramesCapturedTimer){
+    if (self.noFramesCapturedTimer)
         [self invalidateNoFramesTimerSettingItUpAgain:NO];
-    }
-        
-
-    connection.videoOrientation = AVCaptureVideoOrientationPortrait;
+    
     CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
     CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     [_videoCaptureConsumer consumeImageBuffer:imageBuffer
                                   orientation:[self currentDeviceOrientation]
                                     timestamp:time
-                                     metadata:nil];
+                                     metadata:_videoFrame.metadata];
     
 }
 
@@ -692,41 +680,6 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     });
 }
 
--(void)base64WithImageBuffer:(CVImageBufferRef) imageBuffer{
-    getBase64 = NO;
-    
-    CGImageRef videoImage = [[CIContext contextWithOptions:nil]
-                                         createCGImage:[CIImage imageWithCVPixelBuffer:imageBuffer]
-                                         fromRect:CGRectMake(0, 0,
-                                         CVPixelBufferGetWidth(imageBuffer),
-                                         CVPixelBufferGetHeight(imageBuffer))];
-
-    UIImage *image = [[UIImage alloc] initWithCGImage:videoImage];
-    NSString *base64 = [UIImageJPEGRepresentation(image, 1) base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength];
-    CGImageRelease(videoImage);
-    base64Callback([[NSArray alloc] initWithObjects:base64 , nil]);
-    
-}
-
--(AVCaptureVideoOrientation)orientation
-{
-    switch([[UIDevice currentDevice] orientation]){
-        case UIDeviceOrientationUnknown:
-            return AVCaptureVideoOrientationPortrait;
-        case UIDeviceOrientationPortrait:
-            return AVCaptureVideoOrientationPortrait;
-        case UIDeviceOrientationPortraitUpsideDown:
-            return AVCaptureVideoOrientationPortraitUpsideDown;
-        case UIDeviceOrientationLandscapeLeft:
-            return AVCaptureVideoOrientationLandscapeLeft;
-        case UIDeviceOrientationLandscapeRight:
-            return AVCaptureVideoOrientationLandscapeRight ;
-        case UIDeviceOrientationFaceUp:
-            return AVCaptureVideoOrientationPortrait;
-        case UIDeviceOrientationFaceDown:
-            return AVCaptureVideoOrientationPortrait;
-    }
-}
 
 - (BOOL)isFlashSupported {
     return [[[self videoInput] device] isTorchModeSupported:AVCaptureTorchModeOn];
@@ -796,6 +749,36 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 - (void)getImgData:(RCTResponseSenderBlock) callback{
     getBase64 = YES;
     base64Callback = callback;
+}
+
+- (void)swapCamera:(BOOL) position {
+    return [self setCameraPosition:position ? AVCaptureDevicePositionFront : AVCaptureDevicePositionBack];
+}
+
+- (void)setCameraPosition:(AVCaptureDevicePosition) position {
+
+    [self setTorchMode:AVCaptureTorchModeOff];
+    
+    NSError *error;
+    AVCaptureDeviceInput * newVideoInput = [AVCaptureDeviceInput deviceInputWithDevice:[self cameraWithPosition:position] error:&error];
+    
+    if (error){
+        NSLog(@"Error setting up Video Capture input: %@", error);
+        return;
+    }
+    
+    dispatch_sync(_capture_queue, ^() {
+        [_captureSession beginConfiguration];
+        [_captureSession removeInput:_videoInput];
+        if ([_captureSession canAddInput:newVideoInput]) {
+            [_captureSession addInput:newVideoInput];
+            _videoInput = newVideoInput;
+        } else {
+            [_captureSession addInput:_videoInput];
+        }
+        [_captureSession commitConfiguration];
+    });
+    return;
 }
 @end
 
