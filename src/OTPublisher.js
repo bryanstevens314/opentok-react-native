@@ -95,6 +95,7 @@ class OTPublisher extends Component {
         this.otrnEventHandler(initError);
       } else {
         if (this.context.sessionId) {
+          if(typeof this.props.publisherInitialized){ this.props.publisherInitialized(); }
           OT.getSessionInfo(this.context.sessionId, (session) => {
             if (!isNull(session) && isNull(this.state.publisher) && isConnected(session.connectionStatus)) {
              this.publish();
