@@ -43,8 +43,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
 
-    public final static int PREFERRED_CAPTURE_WIDTH = 640;
-    public final static int PREFERRED_CAPTURE_HEIGHT = 480;
+    public final static int PREFERRED_CAPTURE_WIDTH = 720;
+    public final static int PREFERRED_CAPTURE_HEIGHT = 1280;
 
     private WritableMap response;
     private Context context;
@@ -133,50 +133,50 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
     }
 
     public int startCapture() {
-        if (this.mCamera != null) {
+        try {
+            if (this.mCamera != null) {
 
-            this.configureCaptureSize(PREFERRED_CAPTURE_WIDTH, PREFERRED_CAPTURE_HEIGHT);
-            Parameters parameters = this.mCamera.getParameters();
-            parameters.setPreviewSize(this.mCaptureWidth, this.mCaptureHeight);
+                this.configureCaptureSize(PREFERRED_CAPTURE_WIDTH, PREFERRED_CAPTURE_HEIGHT);
+                Parameters parameters = this.mCamera.getParameters();
+                parameters.setPreviewSize(this.mCaptureWidth, this.mCaptureHeight);
 
-            parameters.setPreviewFormat(this.PIXEL_FORMAT);
+                parameters.setPreviewFormat(this.PIXEL_FORMAT);
 
-            if (!isFrontCamera()) { //front cameras generally don't support AutoFocus
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);  // not supported by Samsung
+                if (!isFrontCamera()) { //front cameras generally don't support AutoFocus
+                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);  // not supported by Samsung
+                }
+
+                this.mCamera.setParameters(parameters);
+
+                PixelFormat.getPixelFormatInfo( PixelFormat.RGBA_8888, this.mPixelFormat);
+                int bufSize = this.mCaptureWidth * this.mCaptureHeight * this.mPixelFormat.bitsPerPixel / 8;
+
+                for (int e = 0; e < 3; ++e) {
+                    byte[] var7 = new byte[bufSize];
+                    this.mCamera.addCallbackBuffer(var7);
+                }
+
+                    this.mSurfaceTexture = new SurfaceTexture(42);
+                    this.mCamera.setPreviewTexture(this.mSurfaceTexture);
+
+                this.mCamera.setPreviewCallbackWithBuffer(this);
+                this.mCamera.startPreview();
+                this.mPreviewBufferLock.lock();
+                this.mExpectedFrameSize = bufSize;
+                this.mPreviewBufferLock.unlock();
+            } else {
+                this.blackFrames = true;
+                this.mHandler.postDelayed(this.newFrame, (long) (1000 / this.fps));
             }
 
-            this.mCamera.setParameters(parameters);
+            this.isCaptureRunning = true;
+            this.isCaptureStarted = true;
 
-            PixelFormat.getPixelFormatInfo( PixelFormat.RGBA_8888, this.mPixelFormat);
-            int bufSize = this.mCaptureWidth * this.mCaptureHeight * this.mPixelFormat.bitsPerPixel / 8;
-
-            for (int e = 0; e < 3; ++e) {
-                byte[] var7 = new byte[bufSize];
-                this.mCamera.addCallbackBuffer(var7);
-            }
-
-            try {
-                this.mSurfaceTexture = new SurfaceTexture(42);
-                this.mCamera.setPreviewTexture(this.mSurfaceTexture);
-            } catch (Exception var5) {
-                var5.printStackTrace();
-                return -1;
-            }
-
-            this.mCamera.setPreviewCallbackWithBuffer(this);
-            this.mCamera.startPreview();
-            this.mPreviewBufferLock.lock();
-            this.mExpectedFrameSize = bufSize;
-            this.mPreviewBufferLock.unlock();
-        } else {
-            this.blackFrames = true;
-            this.mHandler.postDelayed(this.newFrame, (long) (1000 / this.fps));
+            return 0;
+        } catch (Exception var5) {
+            var5.printStackTrace();
+            return -1;
         }
-
-        this.isCaptureRunning = true;
-        this.isCaptureStarted = true;
-
-        return 0;
     }
 
     public int stopCapture() {
@@ -285,55 +285,63 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
     }
 
     private static int getCameraIndex(boolean front) {
-        CameraInfo info = new CameraInfo();
-        for (int i = 0; i < Camera.getNumberOfCameras(); ++i) {
-            Camera.getCameraInfo(i, info);
+        try {
+            CameraInfo info = new CameraInfo();
+            for (int i = 0; i < Camera.getNumberOfCameras(); ++i) {
+                Camera.getCameraInfo(i, info);
 
-            if ((front && info.facing == 1) || !front && info.facing == 0) {
-                return i;
+                if ((front && info.facing == 1) || !front && info.facing == 0) {
+                    return i;
+                }
             }
+        } catch (Exception var5) {
+            var5.printStackTrace();
         }
 
         return 0;
     }
 
     private void configureCaptureSize(int preferredWidth, int preferredHeight) {
-        Parameters maxw = this.mCamera.getParameters();
-        List sizes = maxw.getSupportedPreviewSizes();
+        try {
+            Parameters maxw = this.mCamera.getParameters();
+            List sizes = maxw.getSupportedPreviewSizes();
 
-        this.mCaptureFPS = 30;
+            this.mCaptureFPS = 30;
 
-        // get the largest width and height that is smaller than the preferredWidth and preferredHeight
-        if( preferredWidth < preferredHeight ){
-            int temp = preferredHeight;
-            preferredHeight = preferredWidth;
-            preferredWidth = temp;
+            // get the largest width and height that is smaller than the preferredWidth and preferredHeight
+            if( preferredWidth < preferredHeight ){
+                int temp = preferredHeight;
+                preferredHeight = preferredWidth;
+                preferredWidth = temp;
 
-        }
-        for (Object size : sizes) {
-            Size var17 = (Size) size;
-            if (var17.width >= this.mCaptureWidth && var17.height >= this.mCaptureHeight && var17.width <= preferredWidth && var17.height <= preferredHeight) {
-                this.mCaptureWidth = var17.width;
-                this.mCaptureHeight = var17.height;
             }
-        }
-
-        if (this.mCaptureWidth == 0 || this.mCaptureHeight == 0) {
-
-            Size var15 = (Size) sizes.get(0);
-            int var16 = var15.width;
-            int minh = var15.height;
-
             for (Object size : sizes) {
-                var15 = (Size) size;
-                if (var15.width <= var16 && var15.height <= minh) {
-                    var16 = var15.width;
-                    minh = var15.height;
+                Size var17 = (Size) size;
+                if (var17.width >= this.mCaptureWidth && var17.height >= this.mCaptureHeight && var17.width <= preferredWidth && var17.height <= preferredHeight) {
+                    this.mCaptureWidth = var17.width;
+                    this.mCaptureHeight = var17.height;
                 }
             }
 
-            this.mCaptureWidth = var16;
-            this.mCaptureHeight = minh;
+            if (this.mCaptureWidth == 0 || this.mCaptureHeight == 0) {
+
+                Size var15 = (Size) sizes.get(0);
+                int var16 = var15.width;
+                int minh = var15.height;
+
+                for (Object size : sizes) {
+                    var15 = (Size) size;
+                    if (var15.width <= var16 && var15.height <= minh) {
+                        var16 = var15.width;
+                        minh = var15.height;
+                    }
+                }
+
+                this.mCaptureWidth = var16;
+                this.mCaptureHeight = minh;
+            }
+        } catch (Exception var5) {
+            var5.printStackTrace();
         }
     }
 
@@ -403,5 +411,22 @@ class OTCameraCapture extends BaseVideoCapturer implements PreviewCallback {
     public void resetZoom(){
         zoomIndex = 0;
         setZoom(0);
+    }
+
+    public void isFlashSupported(Callback callback){
+        Parameters params = mCamera.getParameters();
+        List<String> flashModes = params.getSupportedFlashModes();
+        if(flashModes == null) {
+            callback.invoke(false);
+            return;
+        }
+
+        for(String flashMode : flashModes) {
+            if(Parameters.FLASH_MODE_ON.equals(flashMode)) {
+                callback.invoke(true);
+                return;
+            }
+        }
+        callback.invoke(false);
     }
 }

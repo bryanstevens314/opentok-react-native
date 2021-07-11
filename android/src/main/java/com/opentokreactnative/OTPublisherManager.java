@@ -46,6 +46,11 @@ public class OTPublisherManager extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void isFlashSupported(Callback callback) {
+        capturer.isFlashSupported(callback);
+    }
+
+    @ReactMethod
     public void setFlash(String isFlashOn) {
         capturer.setFlashEnabled(isFlashOn);
     }
